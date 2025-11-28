@@ -1,0 +1,1865 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Expense Tracker API",
+        "description": "The Expense Tracker API provides endpoints to record, update, and retrieve expense data. It supports features such as expense categorization, filtering by date, and generating summaries to help users monitor their financial activities effectively.",
+        "contact": {
+            "name": "Muh Rayhan Fahreza",
+            "email": "rayhhanfahreza56@gmail.com",
+            "url": "www.linkedin.com/in/muh-rayhan-fahreza"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://localhost:8080/api"
+        }
+    ],
+    "paths": {
+        "/register": {
+            "post": {
+                "summary": "Register a new user account",
+                "tags": [
+                    "users"
+                ],
+                "description": "This endpoint allows new users to create an account by providing required registration details such as username, email, and password. Upon successful registration, the API returns a confirmation response with the created user information. If the provided data is invalid or the email is already registered, an appropriate error message will be returned.",
+                "requestBody": {
+                    "description": "User registration data including username, email, and password in JSON format.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserCreate"
+                            },
+                            "examples": {
+                                "newUser": {
+                                    "summary": "Example of a new user request",
+                                    "value": {
+                                        "username": "kiwoyo1",
+                                        "email": "ray@example.com",
+                                        "password": "SecurePass123"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The user has been successfully created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                },
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 201,
+                                            "status": "Created",
+                                            "data": {
+                                                "username": "kiwoyo1",
+                                                "email": "ray@example.com"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - validation error or invalid input.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorBadRequest": {
+                                        "summary": "Example bad request response",
+                                        "value": {
+                                            "code": 400,
+                                            "status": "BAD REQUEST",
+                                            "data": "Key: 'UserRequest.Email' Error:Field validation for 'Email' failed"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - username or email already exists.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorConflict": {
+                                        "summary": "Example conflict response",
+                                        "value": {
+                                            "code": 409,
+                                            "status": "CONFLICT",
+                                            "data": {
+                                                "message": "username already exist!"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - unexpected failure.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorServer": {
+                                        "summary": "Example internal server error",
+                                        "value": {
+                                            "code": 500,
+                                            "status": "INTERNAL SERVER ERROR",
+                                            "data": "Unexpected error occurred"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/verify-email": {
+            "post": {
+                "summary": "Verify user email address",
+                "tags": [
+                    "users"
+                ],
+                "description": "This endpoint verifies a user's email using a verification code. If the code is valid and not expired, the user's email will be marked as verified. If the code is invalid, expired, or too many attempts are made, appropriate error messages will be returned.",
+                "requestBody": {
+                    "description": "Verification data including email and verification code.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmailRequest"
+                            },
+                            "examples": {
+                                "validRequest": {
+                                    "summary": "Example of a valid verification request",
+                                    "value": {
+                                        "email": "ray@example.com",
+                                        "code": "499840"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Email successfully verified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                },
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "username": "kiwoyo1",
+                                                "email": "ray@example.com"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - verification code invalid.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "verification code is invalid"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - verification code expired or invalid.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "verification code expired or invalid. please request a new one"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too Many Requests - verification attempts exceeded.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorTooManyRequests": {
+                                        "summary": "Example too many requests response",
+                                        "value": {
+                                            "code": 429,
+                                            "status": "TOO MANY REQUEST",
+                                            "data": {
+                                                "message": "too many attempts, please wait 5 minutes"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - unexpected failure.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorServer": {
+                                        "summary": "Example internal server error",
+                                        "value": {
+                                            "code": 500,
+                                            "status": "INTERNAL SERVER ERROR",
+                                            "data": "Unexpected error occurred"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "summary": "Login user account",
+                "tags": [
+                    "users"
+                ],
+                "description": "This endpoint allows a user to log in by providing a valid username and password. If the credentials are correct, the API returns user information along with an authentication token. If the credentials are invalid, an appropriate error message will be returned.",
+                "requestBody": {
+                    "description": "Login data including username and password.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            },
+                            "examples": {
+                                "validLogin": {
+                                    "summary": "Example of a valid login request",
+                                    "value": {
+                                        "username": "kiwoyo1",
+                                        "password": "Kiwoyo12345"
+                                    }
+                                },
+                                "invalidLogin": {
+                                    "summary": "Example of an invalid login request",
+                                    "value": {
+                                        "username": "kiwoyo1",
+                                        "password": "wrongPassword"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                },
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "id": 4,
+                                                "username": "kiwoyo1",
+                                                "email": "adwpakpawgt@gmail.com",
+                                                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - invalid username or password.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "username or password invalid!"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error - unexpected failure.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorServer": {
+                                        "summary": "Example internal server error",
+                                        "value": {
+                                            "code": 500,
+                                            "status": "INTERNAL SERVER ERROR",
+                                            "data": "Unexpected error occurred"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/category": {
+            "post": {
+                "summary": "Create a new category",
+                "tags": [
+                    "categories"
+                ],
+                "description": "This endpoint creates a new expense category. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "description": "Category data including name.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryCreateRequest"
+                            },
+                            "examples": {
+                                "newCategory": {
+                                    "summary": "Example of a new category request",
+                                    "value": {
+                                        "name": "Party"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Category successfully created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryResponse"
+                                },
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 201,
+                                            "status": "Created",
+                                            "data": {
+                                                "id": 13,
+                                                "name": "Party"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - validation error or invalid input.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorBadRequest": {
+                                        "summary": "Example bad request response",
+                                        "value": {
+                                            "code": 400,
+                                            "status": "BAD REQUEST",
+                                            "data": "Key: 'CategoryRequest.Name' Error:Field validation for 'Name' failed on the 'required' tag"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Find all categories for the authenticated user",
+                "tags": [
+                    "categories"
+                ],
+                "description": "This endpoint retrieves all categories belonging to the authenticated user. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Categories successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": [
+                                                {
+                                                    "id": 1,
+                                                    "name": "Daily"
+                                                },
+                                                {
+                                                    "id": 2,
+                                                    "name": "Investing"
+                                                },
+                                                {
+                                                    "id": 3,
+                                                    "name": "Fashion"
+                                                },
+                                                {
+                                                    "id": 8,
+                                                    "name": "Food"
+                                                },
+                                                {
+                                                    "id": 9,
+                                                    "name": "Transport"
+                                                },
+                                                {
+                                                    "id": 10,
+                                                    "name": "Shopping"
+                                                },
+                                                {
+                                                    "id": 11,
+                                                    "name": "Bills"
+                                                },
+                                                {
+                                                    "id": 12,
+                                                    "name": "Entertainment"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/category/{category_id}": {
+            "delete": {
+                "summary": "Delete a category",
+                "tags": [
+                    "categories"
+                ],
+                "description": "This endpoint deletes a category by its ID. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 13
+                        },
+                        "description": "The ID of the category to delete."
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Category successfully deleted.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 204,
+                                            "status": "NO CONTENT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - category does not exist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "category not found"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Find category by ID",
+                "tags": [
+                    "categories"
+                ],
+                "description": "This endpoint retrieves a category by its ID. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "category_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
+                        },
+                        "description": "The ID of the category to retrieve."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "id": 2,
+                                                "name": "Investing"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - category does not exist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "category not found"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/expense": {
+            "get": {
+                "summary": "Find expenses with filters",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint retrieves expenses belonging to the authenticated user. Requires JWT Bearer token in the Authorization header. Supports query parameters for filtering, sorting, and pagination.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        },
+                        "description": "Maximum number of expenses to return."
+                    },
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        },
+                        "description": "Number of expenses to skip before starting to return results."
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        },
+                        "description": "Filter expenses by category ID."
+                    },
+                    {
+                        "name": "min_amount",
+                        "in": "query",
+                        "schema": {
+                            "type": "number",
+                            "example": 10000
+                        },
+                        "description": "Filter expenses with amount greater than or equal to this value."
+                    },
+                    {
+                        "name": "max_amount",
+                        "in": "query",
+                        "schema": {
+                            "type": "number",
+                            "example": 200000
+                        },
+                        "description": "Filter expenses with amount less than or equal to this value."
+                    },
+                    {
+                        "name": "created_before",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2024-12-06T23:59:59Z"
+                        },
+                        "description": "Filter expenses created before this date."
+                    },
+                    {
+                        "name": "created_after",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2024-12-01T00:00:00Z"
+                        },
+                        "description": "Filter expenses created after this date."
+                    },
+                    {
+                        "name": "sort_by",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "example": "amount"
+                        },
+                        "description": "Field to sort by (e.g., amount, created_at)."
+                    },
+                    {
+                        "name": "order",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ],
+                            "example": "desc"
+                        },
+                        "description": "Sort order (asc or desc)."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expenses successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "successCreatedRange": {
+                                        "summary": "Example response with created_after and created_before filters",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": [
+                                                {
+                                                    "id": 22,
+                                                    "category_id": 10,
+                                                    "category_name": "Shopping",
+                                                    "description": "Beli earphone",
+                                                    "amount": 75000,
+                                                    "created_at": "2024-12-06T19:00:00Z"
+                                                },
+                                                {
+                                                    "id": 21,
+                                                    "category_id": 8,
+                                                    "category_name": "Food",
+                                                    "description": "Roti & kopi",
+                                                    "amount": 18000,
+                                                    "created_at": "2024-12-06T07:00:00Z"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "successCategoryFilter": {
+                                        "summary": "Example response with category_id filter",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": [
+                                                {
+                                                    "id": 35,
+                                                    "category_id": 10,
+                                                    "category_name": "Shopping",
+                                                    "description": "beli ghost of yotei",
+                                                    "amount": 150000,
+                                                    "created_at": "2025-11-24T13:50:23Z"
+                                                },
+                                                {
+                                                    "id": 36,
+                                                    "category_id": 10,
+                                                    "category_name": "Shopping",
+                                                    "description": "beli persona 5",
+                                                    "amount": 350000,
+                                                    "created_at": "2025-10-24T13:50:22Z"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    "successAmountRange": {
+                                        "summary": "Example response with min_amount and max_amount filters",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": [
+                                                {
+                                                    "id": 35,
+                                                    "category_id": 10,
+                                                    "category_name": "Shopping",
+                                                    "description": "beli ghost of yotei",
+                                                    "amount": 150000,
+                                                    "created_at": "2025-11-24T13:50:23Z"
+                                                },
+                                                {
+                                                    "id": 8,
+                                                    "category_id": 3,
+                                                    "category_name": "Fashion",
+                                                    "description": "Beli topi",
+                                                    "amount": 150000,
+                                                    "created_at": "2025-11-23T14:51:22Z"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new expense",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint creates a new expense for the authenticated user. Requires JWT Bearer token in the Authorization header. Optional fields: description, created_at (defaults to current time if not provided).",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "description": "Expense data including category_id, description, amount, and created_at.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExpenseCreateRequest"
+                            },
+                            "examples": {
+                                "newExpense": {
+                                    "summary": "Example of a new expense request",
+                                    "value": {
+                                        "category_id": 10,
+                                        "description": "beli persona 6",
+                                        "amount": 350000,
+                                        "created_at": "2024-12-01T09:00:00Z"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Expense successfully created.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpenseResponse"
+                                },
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 201,
+                                            "status": "Created",
+                                            "data": {
+                                                "id": 36,
+                                                "category_id": 10,
+                                                "category_name": "Shopping",
+                                                "description": "beli persona 5",
+                                                "amount": 350000,
+                                                "created_at": "2025-10-24T13:50:22Z"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - validation error or invalid input.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorBadRequest": {
+                                        "summary": "Example bad request response",
+                                        "value": {
+                                            "code": 400,
+                                            "status": "BAD REQUEST",
+                                            "data": "Key: 'ExpenseCreateRequest.CategoryId' Error:Field validation for 'CategoryId' failed on the 'required' tag"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/expense/{expense_id}": {
+            "get": {
+                "summary": "Get expense by ID",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint retrieves a specific expense by its ID, belonging to the authenticated user. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "expense_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 36
+                        },
+                        "description": "The ID of the expense to retrieve."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "id": 36,
+                                                "category_id": 10,
+                                                "category_name": "Shopping",
+                                                "description": "beli persona 5",
+                                                "amount": 350000,
+                                                "created_at": "2025-10-24T13:50:22Z"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - expense does not exist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "expense with id:400 not found"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update an expense",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint updates an expense by its ID, belonging to the authenticated user. Requires JWT Bearer token in the Authorization header. At least one field must be provided to update.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "expense_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 36
+                        },
+                        "description": "The ID of the expense to update."
+                    }
+                ],
+                "requestBody": {
+                    "description": "Expense fields to update. At least one field must be provided.",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExpenseUpdateRequest"
+                            },
+                            "examples": {
+                                "updateAll": {
+                                    "summary": "Example updating all fields",
+                                    "value": {
+                                        "category_id": 8,
+                                        "description": "buy",
+                                        "amount": 350000,
+                                        "created_at": "2025-11-24T13:50:22Z"
+                                    }
+                                },
+                                "updatePartial": {
+                                    "summary": "Example updating only description",
+                                    "value": {
+                                        "description": "changed description"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Expense successfully updated.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "category_id": 8,
+                                            "description": "buy",
+                                            "created_at": "2025-11-24T13:50:22Z"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - expense does not exist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "expense with id:39 not found"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid category_id or no fields provided.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorInvalidCategory": {
+                                        "summary": "Example invalid category response",
+                                        "value": {
+                                            "code": 400,
+                                            "status": "BAD REQUEST",
+                                            "data": "category_id does not exist"
+                                        }
+                                    },
+                                    "errorNoFields": {
+                                        "summary": "Example no fields provided response",
+                                        "value": {
+                                            "code": 400,
+                                            "status": "BAD REQUEST",
+                                            "data": "at least one field must be updated"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete an expense",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint deletes an expense by its ID, belonging to the authenticated user. Requires JWT Bearer token in the Authorization header.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "expense_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 36
+                        },
+                        "description": "The ID of the expense to delete."
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Expense successfully deleted.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "success": {
+                                        "summary": "Example success response",
+                                        "value": {
+                                            "code": 204,
+                                            "status": "NO CONTENT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - expense does not exist.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorNotFound": {
+                                        "summary": "Example not found response",
+                                        "value": {
+                                            "code": 404,
+                                            "status": "NOT FOUND",
+                                            "data": "expense with id:99 not found"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/expenses/summary/details": {
+            "get": {
+                "summary": "Get expense summary details",
+                "tags": [
+                    "expenses"
+                ],
+                "description": "This endpoint retrieves detailed expense summaries grouped by category for the authenticated user. Requires JWT Bearer token in the Authorization header. Supports optional query parameters for filtering by description, category_id, and date combinations (day, month, year).",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "description",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "example": "bayar"
+                        },
+                        "description": "Filter expenses by description keyword."
+                    },
+                    {
+                        "name": "category_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 8
+                        },
+                        "description": "Filter expenses by category ID."
+                    },
+                    {
+                        "name": "year",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2024
+                        },
+                        "description": "Filter expenses by year. Required if month is provided."
+                    },
+                    {
+                        "name": "month",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 12
+                        },
+                        "description": "Filter expenses by month. Requires year to be provided."
+                    },
+                    {
+                        "name": "day",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 12
+                        },
+                        "description": "Filter expenses by day. Requires month and year to be provided."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense summary successfully retrieved.",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "successNoFilter": {
+                                        "summary": "Example success response without query params",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "total_all": 10385500,
+                                                "categories": [
+                                                    {
+                                                        "category_name": "Transport",
+                                                        "records": [
+                                                            {
+                                                                "amount": 12000,
+                                                                "date": "2024-12-01",
+                                                                "description": "Gojek ke kampus"
+                                                            },
+                                                            {
+                                                                "amount": 3500,
+                                                                "date": "2024-12-05",
+                                                                "description": "Transjakarta"
+                                                            }
+                                                        ],
+                                                        "total": 58500
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "successDescriptionFilter": {
+                                        "summary": "Example response with description filter",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "total_all": 725000,
+                                                "categories": [
+                                                    {
+                                                        "category_name": "Bills",
+                                                        "records": [
+                                                            {
+                                                                "amount": 250000,
+                                                                "date": "2024-12-03",
+                                                                "description": "Bayar listrik"
+                                                            },
+                                                            {
+                                                                "amount": 325000,
+                                                                "date": "2024-12-12",
+                                                                "description": "Bayar WiFi"
+                                                            }
+                                                        ],
+                                                        "total": 725000
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "successDayMonthYearFilter": {
+                                        "summary": "Example response with day, month, year filter",
+                                        "value": {
+                                            "code": 200,
+                                            "status": "OK",
+                                            "data": {
+                                                "total_all": 545000,
+                                                "categories": [
+                                                    {
+                                                        "category_name": "Shopping",
+                                                        "records": [
+                                                            {
+                                                                "amount": 220000,
+                                                                "date": "2024-12-12",
+                                                                "description": "Beli celana jeans"
+                                                            }
+                                                        ],
+                                                        "total": 220000
+                                                    },
+                                                    {
+                                                        "category_name": "Bills",
+                                                        "records": [
+                                                            {
+                                                                "amount": 325000,
+                                                                "date": "2024-12-12",
+                                                                "description": "Bayar WiFi"
+                                                            }
+                                                        ],
+                                                        "total": 325000
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - missing or invalid token.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                },
+                                "examples": {
+                                    "errorUnauthorized": {
+                                        "summary": "Example unauthorized response",
+                                        "value": {
+                                            "code": 401,
+                                            "status": "UNAUTHORIZED",
+                                            "data": {
+                                                "message": "missing Authorization header"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
+            }
+        },
+        "schemas": {
+            "UserCreate": {
+                "type": "object",
+                "required": [
+                    "username",
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 5,
+                        "maxLength": 30
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "description": "must contain an email format and the email has not been registered in this application before"
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 8,
+                        "pattern": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}$",
+                        "description": "Password must contain at least one uppercase letter, one lowercase letter, one number, and be at least 8 characters long."
+                    }
+                }
+            },
+            "CategoryCreateRequest": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "Party"
+                    }
+                }
+            },
+            "ExpenseCreateRequest": {
+                "type": "object",
+                "required": [
+                    "category_id",
+                    "amount"
+                ],
+                "properties": {
+                    "category_id": {
+                        "type": "integer",
+                        "example": 10,
+                        "description": "ID of the category this expense belongs to."
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "beli persona 6",
+                        "description": "Optional description of the expense."
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 350000,
+                        "description": "Amount of the expense."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-12-01T09:00:00Z",
+                        "description": "Optional creation time. Defaults to current time if not provided."
+                    }
+                }
+            },
+            "ExpenseUpdateRequest": {
+                "type": "object",
+                "properties": {
+                    "category_id": {
+                        "type": "integer",
+                        "example": 8,
+                        "description": "Optional new category ID. Must exist in categories."
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "buy",
+                        "description": "Optional new description."
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 350000,
+                        "description": "Optional new amount."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2025-11-24T13:50:22Z",
+                        "description": "Optional new creation time."
+                    }
+                }
+            },
+            "UserResponse": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "example": 201
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Created"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "username": {
+                                "type": "string",
+                                "example": "kiwoyo2"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email",
+                                "example": "adwpakpawgt@gmail.com"
+                            }
+                        }
+                    }
+                }
+            },
+            "CategoryResponse": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "example": 201
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Created"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 13
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "Party"
+                            }
+                        }
+                    }
+                }
+            },
+            "ExpenseResponse": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "example": 201
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "Created"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 36
+                            },
+                            "category_id": {
+                                "type": "integer",
+                                "example": 10
+                            },
+                            "category_name": {
+                                "type": "string",
+                                "example": "Shopping"
+                            },
+                            "description": {
+                                "type": "string",
+                                "example": "beli persona 5"
+                            },
+                            "amount": {
+                                "type": "number",
+                                "example": 350000
+                            },
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "example": "2025-10-24T13:50:22Z"
+                            }
+                        }
+                    }
+                }
+            },
+            "ErrorResponse": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "example": 400
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "BAD REQUEST"
+                    },
+                    "data": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "example": "Key: 'UserRequest.Email' Error:Field validation for 'Email' failed"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "message": {
+                                        "type": "string",
+                                        "example": "username already exist!"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            },
+            "VerifyEmailRequest": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "code"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "ray@example.com",
+                        "description": "The email address to be verified."
+                    },
+                    "code": {
+                        "type": "string",
+                        "example": "499840",
+                        "description": "Verification code sent to the user's email."
+                    }
+                }
+            },
+            "LoginRequest": {
+                "type": "object",
+                "required": [
+                    "username",
+                    "password"
+                ],
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "example": "kiwoyo1"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "example": "Kiwoyo12345"
+                    }
+                }
+            },
+            "LoginResponse": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "integer",
+                        "example": 200
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "OK"
+                    },
+                    "data": {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 4
+                            },
+                            "username": {
+                                "type": "string",
+                                "example": "kiwoyo1"
+                            },
+                            "email": {
+                                "type": "string",
+                                "format": "email",
+                                "example": "adwpakpawgt@gmail.com"
+                            },
+                            "token": {
+                                "type": "string",
+                                "description": "JWT authentication token",
+                                "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

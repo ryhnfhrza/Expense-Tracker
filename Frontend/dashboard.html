@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CyberLedger — Dashboard</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Script utama -->
+    <script type="module" src="js/dashboard.js" defer></script>
+    <!-- Script tambahan untuk manage category -->
+    <script type="module" src="js/manageCategory.js" defer></script>
+
+    <style>
+      :root {
+        --bg: #030b17;
+        --glass: #0b1626cc;
+        --accent: #6f3aff;
+        --cyan: #00eaff;
+      }
+      body {
+        background: linear-gradient(180deg, #030b17, #05172c);
+      }
+      .panel {
+        background: var(--glass);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(0, 255, 255, 0.1);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .neon {
+        color: var(--accent);
+        text-shadow: 0 0 12px rgba(120, 60, 255, 0.6);
+      }
+      button.cyber {
+        background: linear-gradient(90deg, var(--accent), var(--cyan));
+        color: #04121f;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+      }
+      input,
+      select {
+        background: #071a2e;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 9px;
+        color: #bcd3ff;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+
+  <body class="text-blue-50 px-4 sm:px-6 py-6">
+    <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold neon">CyberLedger Dashboard</h1>
+      <button
+        id="logout-btn"
+        class="px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
+      >
+        Logout
+      </button>
+    </header>
+
+    <!-- Summary -->
+    <section
+      id="summary"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"
+    ></section>
+
+    <!-- Charts -->
+    <section class="panel mb-6">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
+        <h2 class="text-xl font-bold neon">Financial Timeline</h2>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <label class="text-sm text-gray-300">Range (days)</label>
+          <input
+            id="chart-range"
+            type="number"
+            min="1"
+            value="30"
+            class="w-full sm:w-24"
+          />
+        </div>
+      </div>
+      <div class="h-64 sm:h-80 lg:h-96">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Expenses & Filters -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="panel">
+        <h3 class="font-semibold mb-3">Add Expense</h3>
+        <form id="addExpense" class="grid grid-cols-1 gap-2">
+          <input
+            id="add-amount"
+            name="amount"
+            placeholder="Amount (IDR, e.g. 350.000)"
+            type="text"
+          />
+          <input name="description" placeholder="Description (optional)" />
+          <select id="add-category" name="category_id"></select>
+          <input
+            id="add-created-at"
+            name="created_at"
+            type="datetime-local"
+            placeholder="Optional date"
+          />
+          <button class="cyber w-full" type="submit">Add</button>
+        </form>
+      </div>
+
+      <div class="panel lg:col-span-2">
+        <div
+          class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-2"
+        >
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-2 items-end w-full"
+          >
+            <input id="search" placeholder="Search..." class="w-full" />
+            <select id="filter-category" class="w-full"></select>
+            <input
+              id="filter-min"
+              type="text"
+              placeholder="Min amount"
+              class="w-full"
+            />
+            <input
+              id="filter-max"
+              type="text"
+              placeholder="Max amount"
+              class="w-full"
+            />
+
+            <!-- Created After -->
+            <div class="flex flex-col">
+              <label for="filter-after" class="text-xs text-gray-400"
+                >Created After</label
+              >
+              <input id="filter-after" type="date" class="w-full" />
+            </div>
+
+            <!-- Created Before -->
+            <div class="flex flex-col">
+              <label for="filter-before" class="text-xs text-gray-400"
+                >Created Before</label
+              >
+              <input id="filter-before" type="date" class="w-full" />
+            </div>
+
+            <button
+              id="show-all"
+              class="w-full sm:w-auto px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
+            >
+              Show all
+            </button>
+            <button
+              id="show-today"
+              class="w-full sm:w-auto px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
+            >
+              Today
+            </button>
+          </div>
+          <div class="flex flex-col text-sm text-gray-300 mt-2 sm:mt-0">
+            <span
+              >List total:
+              <span id="total-expenses" class="text-cyan-300 font-semibold"
+                >Rp 0</span
+              ></span
+            >
+            <span class="text-xs text-gray-400"
+              >Global total:
+              <span id="global-total" class="text-cyan-300">Rp 0</span></span
+            >
+          </div>
+        </div>
+        <div class="text-xs text-gray-400 mb-3">
+          Default view: showing expenses for today.
+        </div>
+        <ul
+          id="expense-list"
+          class="max-h-[420px] overflow-y-auto space-y-2"
+        ></ul>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="panel mt-6">
+      <div class="flex flex-wrap justify-between items-center mb-2">
+        <h3 class="font-semibold neon">Manage Categories</h3>
+        <button id="newCatBtn" class="cyber">+</button>
+      </div>
+      <ul id="categories" class="space-y-2"></ul>
+    </section>
+
+    <!-- Modal: Update expense -->
+    <div
+      id="modal"
+      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50"
+    >
+      <div class="panel w-[92%] max-w-lg">
+        <div class="flex items-center justify-between mb-3">
+          <h3 id="modal-title" class="font-semibold">Update expense</h3>
+          <button id="modal-close" class="text-gray-300">✕</button>
+        </div>
+        <form id="modal-form" class="grid grid-cols-1 gap-3">
+          <input id="modal-amount" type="text" placeholder="e.g. 350.000" />
+          <input
+            id="modal-desc"
+            type="text"
+            placeholder="Leave empty to skip"
+          />
+          <select id="modal-category"></select>
+          <input id="modal-date" type="datetime-local" />
+          <button class="cyber w-full" type="submit">Save changes</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Manage category (drag & drop) -->
+    <div
+      id="manage-cat-modal"
+      class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+    >
+      <div
+        class="panel w-[95%] max-w-5xl flex flex-col lg:flex-row gap-6 overflow-y-auto max-h-[90vh]"
+      >
+        <div class="flex-1">
+          <h3 class="font-semibold mb-3">Expenses in this category</h3>
+          <div id="manage-expenses" class="grid gap-3"></div>
+        </div>
+        <div class="w-full lg:w-64">
+          <h3 class="font-semibold mb-3">Target categories</h3>
+          <input
+            id="cat-search"
+            type="text"
+            placeholder="Search category..."
+            class="w-full mb-2"
+          />
+          <ul id="cat-list" class="space-y-2"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast container -->
+    <div
+      id="toast"
+      class="hidden fixed right-4 bottom-4 z-[100] min-w-[280px]"
+    ></div>
+  </body>
+</html>
