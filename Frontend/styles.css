@@ -1,5 +1,25 @@
 /* small custom utilities for prototype */
-.card { background: white; padding: 1rem; border-radius: 0.5rem; box-shadow: 0 4px 10px rgba(2,6,23,0.06); }
-.muted { color: #6b7280; font-size: 0.9rem; }
+.card {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 10px rgba(2, 6, 23, 0.06);
+}
+.muted {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
 /* dark mode support */
-:root.dark .card { background: #0f172a; color: #e6eef8; }
+:root.dark .card {
+  background: #0f172a;
+  color: #e6eef8;
+}
+
+.masked {
+  filter: blur(6px);
+  transition: filter 0.3s ease;
+}
+
+#heatmap {
+  grid-template-rows: repeat(4, 24px);
+}

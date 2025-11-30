@@ -9,6 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Script utama -->
     <script type="module" src="js/dashboard.js" defer></script>
+    <script type="module" src="js/dashboardExtras.js"></script>
+
     <!-- Script tambahan untuk manage category -->
     <script type="module" src="js/manageCategory.js" defer></script>
 
@@ -18,6 +20,7 @@
         --glass: #0b1626cc;
         --accent: #6f3aff;
         --cyan: #00eaff;
+        --cell-size: 14px;
       }
       body {
         background: linear-gradient(180deg, #030b17, #05172c);
@@ -48,18 +51,65 @@
         color: #bcd3ff;
         border-radius: 8px;
       }
+
+      .masked {
+        filter: blur(6px);
+        transition: filter 0.3s ease;
+      }
+      #heatmap {
+        grid-auto-rows: 24px;
+      }
+      /* Tablet */
+      @media (min-width: 640px) {
+        :root {
+          --cell-size: 16px;
+        }
+      }
+      /* Laptop Normal */
+      @media (min-width: 1024px) {
+        :root {
+          --cell-size: 18px;
+        }
+      }
+      /* Monitor Besar */
+      @media (min-width: 1440px) {
+        :root {
+          --cell-size: 19.5px;
+        } /* tidak bengkak */
+      }
+      #heatmap > div {
+        overflow-x: visible; /* biar tidak forced scroll */
+      }
+      @media (min-width: 1280px) {
+        :root {
+          --cell-size: 17px;
+        }
+      }
+      @media (min-width: 1536px) {
+        :root {
+          --cell-size: 18px;
+        }
+      }
     </style>
   </head>
 
   <body class="text-blue-50 px-4 sm:px-6 py-6">
     <header class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <h1 class="text-2xl sm:text-3xl font-bold neon">CyberLedger Dashboard</h1>
-      <button
-        id="logout-btn"
-        class="px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
-      >
-        Logout
-      </button>
+      <div class="flex gap-2">
+        <button
+          id="logout-btn"
+          class="px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
+        >
+          Logout
+        </button>
+        <button
+          id="toggle-mask"
+          class="px-3 py-1 border border-cyan-500 rounded-lg text-cyan-300"
+        >
+          Toggle Mask
+        </button>
+      </div>
     </header>
 
     <!-- Summary -->
@@ -88,10 +138,40 @@
       </div>
     </section>
 
+    <!-- tambahan -->
+    <section class="panel mt-6">
+      <h3 class="font-semibold neon mb-3">Expense Heatmap</h3>
+      <div
+        id="heatmap"
+        class="p-2 bg-[#071a2e] rounded-lg border border-cyan-900 overflow-x-auto"
+      ></div>
+      <p class="text-xs text-gray-400 mt-2">
+        Warna lebih merah = pengeluaran lebih besar.
+      </p>
+    </section>
+
+    <!-- tambahan end -->
+
     <!-- Expenses & Filters -->
     <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div class="panel">
         <h3 class="font-semibold mb-3">Add Expense</h3>
+        <!-- tambah  -->
+        <div class="mb-3">
+          <label for="quick-input" class="text-sm text-gray-300"
+            >Quick Add (Natural Language)</label
+          >
+          <input
+            id="quick-input"
+            type="text"
+            placeholder="Contoh: Beli kopi Rp 25k di Starbucks"
+            class="w-full mt-1"
+          />
+          <p class="text-xs text-gray-400 mt-1">
+            Tekan Enter untuk langsung menambahkan.
+          </p>
+        </div>
+        <!-- tambah end -->
         <form id="addExpense" class="grid grid-cols-1 gap-2">
           <input
             id="add-amount"
@@ -165,13 +245,15 @@
           <div class="flex flex-col text-sm text-gray-300 mt-2 sm:mt-0">
             <span
               >List total:
-              <span id="total-expenses" class="text-cyan-300 font-semibold"
+              <span id="total-expenses" class="font-bold text-cyan-400"
                 >Rp 0</span
               ></span
             >
             <span class="text-xs text-gray-400"
               >Global total:
-              <span id="global-total" class="text-cyan-300">Rp 0</span></span
+              <span id="global-total" class="font-bold text-cyan-400"
+                >Rp 0</span
+              ></span
             >
           </div>
         </div>
@@ -197,7 +279,7 @@
     <!-- Modal: Update expense -->
     <div
       id="modal"
-      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50"
+      class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
     >
       <div class="panel w-[92%] max-w-lg">
         <div class="flex items-center justify-between mb-3">

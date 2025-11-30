@@ -777,6 +777,15 @@
                         "description": "Filter expenses by category ID."
                     },
                     {
+                        "name": "description",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "example": "bills"
+                        },
+                        "description": "Filter expenses by description"
+                    },
+                    {
                         "name": "min_amount",
                         "in": "query",
                         "schema": {

@@ -80,6 +80,10 @@ async function safeApiCall(promise, failTitle = "Request failed") {
         res?.raw?.data ||
         `HTTP ${res?.status}`;
       toast({ title: failTitle, message: String(msg), status: "error" });
+      if (res?.status === 401 || msg.toLowerCase().includes("expired")) {
+        localStorage.removeItem(TOKEN_KEY);
+        window.location.href = "index.html";
+      }
     }
     return res;
   } catch (err) {
@@ -201,6 +205,8 @@ logoutBtn.onclick = () => {
   await loadSummary(); // sets global total
   await loadExpenses(todayRangeUTC()); // default: today's expenses
   await renderChart();
+
+  await window.__reloadDashboard();
 })();
 
 // ===== Summary (sets global total) =====
@@ -243,11 +249,15 @@ export async function loadSummary() {
   summaryWrap.innerHTML = `
     <div class="panel">
       <div class="text-sm text-cyan-300">Total Spent</div>
-      <div class="text-2xl font-bold mt-1">${formatCurrency(totalAll)}</div>
+      <div class="text-2xl text-cyan-400 font-bold mt-1">${formatCurrency(
+        totalAll
+      )}</div>
     </div>
     <div class="panel">
       <div class="text-sm text-cyan-300">Average / day</div>
-      <div class="text-2xl font-bold mt-1">${formatCurrency(avgPerDay)}</div>
+      <div class="text-2xl text-cyan-400 font-bold mt-1">${formatCurrency(
+        avgPerDay
+      )}</div>
     </div>
     <div class="panel">
       <div class="text-sm text-cyan-300">Top Category</div>
@@ -503,6 +513,14 @@ expenseList.addEventListener("click", async (ev) => {
       }
       await loadSummary();
       await renderChart();
+
+      const resHM = await API.getExpenses({
+        sort_by: "created_at",
+        order: "desc",
+        limit: 500,
+      });
+      const dataHM = safeData(resHM);
+      window.renderHeatmap(Array.isArray(dataHM) ? dataHM : []);
     } else {
       toast({
         title: "Delete failed",
@@ -527,7 +545,6 @@ expenseList.addEventListener("click", async (ev) => {
 // ===== Modal: Update expense =====
 function openModal(expense) {
   modal.classList.remove("hidden");
-  modal.classList.add("flex");
   modalTitle.textContent = "Update expense";
   currentEditId = expense?.id ?? null;
 
@@ -535,14 +552,13 @@ function openModal(expense) {
     ? formatIdAmountString(expense.amount)
     : "";
   modalDesc.value = expense?.description ?? "";
-  modalDate.value = expense?.created_at
-    ? new Date(expense.created_at).toISOString().slice(0, 16)
-    : "";
+  modalDate.value = "";
   if (expense?.category_id) modalCat.value = String(expense.category_id);
 }
+window.openModal = openModal;
+
 function closeModal() {
   modal.classList.add("hidden");
-  modal.classList.remove("flex");
   modalForm.reset();
   currentEditId = null;
 }
@@ -579,31 +595,56 @@ modalForm?.addEventListener("submit", async (e) => {
     API.updateExpense(currentEditId, body),
     "Failed to update expense"
   );
+
   if (res?.ok) {
+    // update cache sekali saja
+    if (window.clickedDate && window.dailyExpenses) {
+      const arr = window.dailyExpenses[window.clickedDate];
+      if (arr) {
+        const idx = arr.findIndex((e) => e.id === currentEditId);
+        if (idx !== -1) {
+          arr[idx] = { ...arr[idx], ...body };
+        }
+      }
+    }
+
     toast({ title: "Updated", message: "Expense updated", status: "success" });
     closeModal();
-    // refresh current view
-    if (Object.keys(lastQuery).length === 0) {
-      const all = await fetchAllExpenses({
-        sort_by: "created_at",
-        order: "desc",
-      });
-      await renderExpensesArray(all);
-    } else {
-      await loadExpenses(lastQuery);
-    }
+
     await loadSummary();
     await renderChart();
-  } else {
-    toast({
-      title: "Update failed",
-      message:
-        res?.raw?.data?.message ||
-        res?.raw?.data ||
-        res?.raw?.message ||
-        "Could not update",
-      status: "error",
-    });
+
+    if (window.clickedDate) {
+      const resDay = await safeApiCall(
+        API.getExpenses({
+          created_after: window.clickedDate + "T00:00:00Z",
+          created_before: window.clickedDate + "T23:59:59Z",
+          sort_by: "created_at",
+          order: "desc",
+        }),
+        "Failed to reload day expenses"
+      );
+      const dataDay = safeData(resDay);
+      renderExpensesArray(Array.isArray(dataDay) ? dataDay : []);
+    } else {
+      if (Object.keys(lastQuery).length === 0) {
+        const all = await fetchAllExpenses({
+          sort_by: "created_at",
+          order: "desc",
+        });
+        await renderExpensesArray(all);
+      } else {
+        await loadExpenses(lastQuery);
+      }
+    }
+
+    // refresh heatmap grid
+    const resAll = await safeApiCall(
+      API.getExpenses({ sort_by: "created_at", order: "desc", limit: 500 }),
+      "Failed to reload heatmap"
+    );
+    const dataAll = safeData(resAll);
+    window.renderHeatmap(Array.isArray(dataAll) ? dataAll : []);
   }
 });
 
@@ -614,10 +655,25 @@ if (addExpenseForm) {
     const formBody = Object.fromEntries(new FormData(e.target).entries());
 
     const amountNum = parseIdAmountToNumber(addAmountInput.value);
+    let catId = formBody.category_id ? Number(formBody.category_id) : undefined;
+
+    // fallback: ambil kategori pertama dari API kalau kosong
+    if (!catId) {
+      const catRes = await safeApiCall(API.getCategories());
+      const catData = safeData(catRes);
+      if (Array.isArray(catData) && catData.length > 0) {
+        catId = catData[0].id; // pakai kategori pertama
+      } else {
+        toast({
+          title: "Invalid",
+          message: "No category available",
+          status: "error",
+        });
+        return;
+      }
+    }
     const body = {
-      category_id: formBody.category_id
-        ? Number(formBody.category_id)
-        : undefined,
+      category_id: catId,
       description: formBody.description || undefined,
       amount: amountNum,
       created_at:
@@ -626,10 +682,10 @@ if (addExpenseForm) {
           : new Date().toISOString(),
     };
 
-    if (!body.category_id || body.amount === undefined) {
+    if (body.amount === undefined) {
       toast({
         title: "Invalid",
-        message: "Category and amount are required",
+        message: "Amount is required",
         status: "error",
       });
       return;
@@ -642,6 +698,23 @@ if (addExpenseForm) {
     if (res?.ok && (res.status === 201 || res.raw?.code === 201)) {
       toast({ title: "Added", message: "Expense added", status: "success" });
       addExpenseForm.reset();
+
+      // update cache global dailyExpenses (pakai hari lokal)
+      const created = new Date(body.created_at);
+      const day = new Date(
+        created.getTime() - created.getTimezoneOffset() * 60000
+      )
+        .toISOString()
+        .slice(0, 10);
+
+      if (window.dailyExpenses) {
+        if (!window.dailyExpenses[day]) window.dailyExpenses[day] = [];
+        window.dailyExpenses[day].push({
+          id: res.data?.id || res.raw?.data?.id,
+          ...body,
+        });
+      }
+
       // refresh current view
       if (Object.keys(lastQuery).length === 0) {
         const all = await fetchAllExpenses({
@@ -652,6 +725,16 @@ if (addExpenseForm) {
       } else {
         await loadExpenses(lastQuery);
       }
+
+      // refresh heatmap grid
+      const resAll = await API.getExpenses({
+        sort_by: "created_at",
+        order: "desc",
+        limit: 500,
+      });
+      const dataAll = safeData(resAll);
+      renderHeatmap(Array.isArray(dataAll) ? dataAll : []);
+
       await loadSummary();
       await renderChart();
     } else {
