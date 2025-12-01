@@ -12,11 +12,11 @@ func NewRedis() *redis.Client {
 	redisHost := os.Getenv("REDIS_HOST")
 	redisPort := os.Getenv("REDIS_PORT")
 	redisPass := os.Getenv("REDIS_PASS")
-	redisUser := os.Getenv("REDIS_USER")
+	// redisUser := os.Getenv("REDIS_USER") for local testing only
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", redisHost, redisPort),
-		Username: redisUser,
+		// Username: redisUser, for local testing only
 		Password: redisPass,
 		DB:       0,
 	})
