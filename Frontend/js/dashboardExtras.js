@@ -4,12 +4,49 @@ window.clickDate = null;
 import { API } from "./api.js";
 import { toast } from "./utils/toast.js";
 
+Object.keys(window.dailyExpenses);
+
+async function showDayListForHeatmap(key) {
+  // key = "YYYY-MM-DD" lokal
+  const startIso = new Date(key + "T00:00:00").toISOString();
+  const endIso = new Date(key + "T23:59:59").toISOString();
+
+  const resDay = await API.getExpenses({
+    created_after: startIso,
+    created_before: endIso,
+    sort_by: "created_at",
+    order: "desc",
+  });
+  const dataDay = safeData(resDay) || [];
+  if (typeof window.renderExpensesArray === "function") {
+    window.renderExpensesArray(dataDay);
+  }
+}
+window.showDayListForHeatmap = showDayListForHeatmap;
+
 function safeData(res) {
   if (!res) return null;
   if (res?.data?.data !== undefined) return res.data.data;
   if (res?.data !== undefined) return res.data;
   if (res?.raw?.data !== undefined) return res.raw.data;
   return res?.raw ?? res;
+}
+
+function localDateTimeToUTCISO(localDateStr) {
+  if (!localDateStr) return null;
+  const hasTime = localDateStr.includes("T");
+  // new Date(...) sudah menganggap input sebagai waktu lokal
+  const d = hasTime
+    ? new Date(localDateStr) // contoh: "2025-11-03T08:15"
+    : new Date(localDateStr + "T00:00"); // contoh: "2025-11-03"
+  return d.toISOString(); // otomatis konversi ke UTC tanpa geser manual
+}
+
+function toLocalDateKey(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10); // hasil YYYY-MM-DD sesuai lokal
 }
 
 // ===== Natural Language Input Parser =====
@@ -131,6 +168,8 @@ function updateStreak() {
 // ===== Heatmap Calendar =====
 // Tambahkan <div id="heatmap" class="grid grid-cols-7 gap-1"></div> di HTML
 export async function renderHeatmap(expenses) {
+  window.expensesData = expenses;
+
   const heatmap = document.getElementById("heatmap");
   if (!heatmap) return;
   heatmap.innerHTML = "";
@@ -141,12 +180,7 @@ export async function renderHeatmap(expenses) {
   window.dailyExpenses = {};
 
   (expenses || []).forEach((e) => {
-    const created = e.created_at ? new Date(e.created_at) : null;
-    const day = created
-      ? new Date(created.getTime() - created.getTimezoneOffset() * 60000)
-          .toISOString()
-          .slice(0, 10)
-      : "";
+    const day = toLocalDateKey(e.created_at);
     if (day) {
       const amt = Number(e.amount || 0);
       dailyTotals[day] = (dailyTotals[day] || 0) + (isNaN(amt) ? 0 : amt);
@@ -171,9 +205,7 @@ export async function renderHeatmap(expenses) {
     date.setDate(date.getDate() - (364 - i)); // arah benar → kanan = hari terbaru
 
     // format agar cocok dengan key database
-    const key = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 10);
+    const key = toLocalDateKey(date.toISOString());
 
     const total = dailyTotals[key] || 0;
     const count = dailyCounts[key] || 0;
@@ -222,8 +254,11 @@ export async function renderHeatmap(expenses) {
       const list = document.getElementById("expense-list");
       list.innerHTML = "";
 
-      const expensesForDay = window.dailyExpenses[key] || [];
       let totalDay = 0;
+
+      const expensesForDay = (window.expensesData || []).filter(
+        (e) => toLocalDateKey(e.created_at) === key
+      );
 
       expensesForDay.forEach((exp) => {
         totalDay += Number(exp.amount || 0);
@@ -239,10 +274,10 @@ export async function renderHeatmap(expenses) {
           ).toLocaleString("id-ID")}</span></div>
           <div>${exp.description || "No desc"}</div>
           <div class="text-xs text-gray-400">
-            Category: ${categoryMap[exp.category_id] || "-"} | ${
-          exp.created_at?.slice(0, 16) || ""
-        }
-          </div>
+            Category: ${categoryMap[exp.category_id] || "-"} |   ${new Date(
+          exp.created_at
+        ).toLocaleString("id-ID")}
+</div>
         `;
 
         const actions = document.createElement("div");
@@ -324,7 +359,7 @@ export async function renderHeatmap(expenses) {
       document.getElementById(
         "total-expenses"
       ).textContent = `Rp ${totalDay.toLocaleString("id-ID")}`;
-
+      showDayListForHeatmap(key);
       toast({
         title: "Expenses loaded",
         message: `Menampilkan ${expensesForDay.length} expense pada ${key}`,

@@ -1,9 +1,14 @@
 // js/dashboard.js
+window.dailyExpenses = {}; // ← tambahkan ini
+
 import { API } from "./api.js";
 import { toast } from "./utils/toast.js";
 import { openManageCategory } from "./manageCategory.js";
 
+window.renderExpensesArray = renderExpensesArray;
+
 const TOKEN_KEY = "token";
+console.log([...Object.keys(window.dailyExpenses)].slice(0, 10));
 
 // --- Guard: ensure logged in ---
 const token = localStorage.getItem(TOKEN_KEY);
@@ -12,6 +17,14 @@ if (!token) {
 } else {
   if (typeof API.useToken === "function") API.useToken(token);
   else if (typeof API.setToken === "function") API.setToken(token);
+}
+
+function toLocalDateKey(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  // Geser ke waktu lokal dengan offset timezone
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10); // hasil YYYY-MM-DD sesuai lokal
 }
 
 // ===== Element refs =====
@@ -107,11 +120,11 @@ function formatUserTZ(iso) {
 function localDateTimeToUTCISO(localDateStr) {
   if (!localDateStr) return null;
   const hasTime = localDateStr.includes("T");
+  // new Date(...) sudah menganggap input sebagai waktu lokal
   const d = hasTime
-    ? new Date(localDateStr)
-    : new Date(`${localDateStr}T00:00:00`);
-  // normalize to UTC without timezone drift
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
+    ? new Date(localDateStr) // contoh: "2025-11-03T08:15"
+    : new Date(localDateStr + "T00:00"); // contoh: "2025-11-03"
+  return d.toISOString(); // otomatis konversi ke UTC tanpa geser manual
 }
 
 // Thousand separator UX for amounts (ID-style)
@@ -133,27 +146,29 @@ function bindAmountFormatter(inputEl) {
 }
 
 // Default range: "today" in UTC (start of local day to start of next local day)
-function todayRangeUTC() {
+// Range hari ini berdasarkan zona waktu user SEBENARNYA (local)
+function todayRangeLocal() {
   const now = new Date();
-  const localStart = new Date(
+  const start = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate(),
     0,
     0,
-    0,
     0
-  );
-  const localEnd = new Date(localStart.getTime() + 24 * 60 * 60 * 1000);
-  const startUTC = new Date(
-    localStart.getTime() - localStart.getTimezoneOffset() * 60000
-  ).toISOString();
-  const endUTC = new Date(
-    localEnd.getTime() - localEnd.getTimezoneOffset() * 60000
-  ).toISOString();
+  ); // 00:00 local
+  const end = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59
+  ); // 23:59 local
+
   return {
-    created_after: startUTC,
-    created_before: endUTC,
+    created_after: start.toISOString(),
+    created_before: end.toISOString(),
     sort_by: "created_at",
     order: "desc",
   };
@@ -203,7 +218,7 @@ logoutBtn.onclick = () => {
 
   await loadCategories();
   await loadSummary(); // sets global total
-  await loadExpenses(todayRangeUTC()); // default: today's expenses
+  await loadExpenses(todayRangeLocal()); // default: today's expenses
   await renderChart();
 
   await window.__reloadDashboard();
@@ -288,7 +303,8 @@ export async function renderChart() {
   const dailyMap = new Map();
   (data.categories ?? []).forEach((cat) => {
     (cat.records ?? []).forEach((r) => {
-      const key = r.date;
+      const key = toLocalDateKey(r.date || r.created_at);
+
       const cur = dailyMap.get(key) ?? 0;
       dailyMap.set(key, cur + Number(r.amount ?? 0));
     });
@@ -298,7 +314,7 @@ export async function renderChart() {
   const today = new Date();
   const datesSorted = Array.from(dailyMap.keys()).sort();
   const filtered = datesSorted.filter((dStr) => {
-    const d = new Date(`${dStr}T00:00:00Z`);
+    const d = new Date(dStr + "T00:00:00"); // <<< LOKAL, bukan UTC Z
     const diffDays = Math.floor((today - d) / (1000 * 60 * 60 * 24));
     return diffDays <= rangeDays;
   });
@@ -359,7 +375,10 @@ async function renderExpensesArray(arr) {
 
     const desc = e.description ?? "-";
     const cat = e.category_name ?? e.category ?? "Uncategorized";
-    const date = e.created_at ? formatUserTZ(e.created_at) : e.date ?? "";
+    const date = e.created_at
+      ? toLocalDateKey(e.created_at) + " " + formatUserTZ(e.created_at)
+      : "";
+
     const amount = formatCurrency(e.amount ?? e.total ?? 0);
 
     const li = document.createElement("li");
@@ -474,7 +493,7 @@ showAllBtn?.addEventListener("click", async () => {
 
 // Today button: quick toggle back to today's range
 showTodayBtn?.addEventListener("click", async () => {
-  const range = todayRangeUTC();
+  const range = todayRangeLocal();
   // reset inputs
   if (filterCategory) filterCategory.value = "";
   if (filterMinAmount) filterMinAmount.value = "";
@@ -615,10 +634,14 @@ modalForm?.addEventListener("submit", async (e) => {
     await renderChart();
 
     if (window.clickedDate) {
+      // window.clickedDate sudah YYYY-MM-DD lokal
+      const startIso = new Date(window.clickedDate + "T00:00:00").toISOString();
+      const endIso = new Date(window.clickedDate + "T23:59:59").toISOString();
+
       const resDay = await safeApiCall(
         API.getExpenses({
-          created_after: window.clickedDate + "T00:00:00Z",
-          created_before: window.clickedDate + "T23:59:59Z",
+          created_after: startIso,
+          created_before: endIso,
           sort_by: "created_at",
           order: "desc",
         }),
@@ -626,6 +649,10 @@ modalForm?.addEventListener("submit", async (e) => {
       );
       const dataDay = safeData(resDay);
       renderExpensesArray(Array.isArray(dataDay) ? dataDay : []);
+
+      if (typeof window.showDayListForHeatmap === "function") {
+        await window.showDayListForHeatmap(window.clickedDate);
+      }
     } else {
       if (Object.keys(lastQuery).length === 0) {
         const all = await fetchAllExpenses({
@@ -672,14 +699,18 @@ if (addExpenseForm) {
         return;
       }
     }
+
+    let createdAtIso;
+    if (formBody.created_at?.trim()) {
+      createdAtIso = localDateTimeToUTCISO(formBody.created_at.trim());
+    } else {
+      createdAtIso = new Date().toISOString();
+    }
     const body = {
       category_id: catId,
       description: formBody.description || undefined,
       amount: amountNum,
-      created_at:
-        formBody.created_at && formBody.created_at.trim() !== ""
-          ? localDateTimeToUTCISO(formBody.created_at.trim())
-          : new Date().toISOString(),
+      created_at: createdAtIso,
     };
 
     if (body.amount === undefined) {
